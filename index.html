@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bRAG</title>
+    <link rel="icon" type="image/svg+xml" href="/public/pitti.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kreon:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class=''>
+        <nav className=''>
+          <a href="/" className=''>
+            <h1 className=''>bRAG</h1>
+          </a>
+          <a href="https://www.pitti.io/" target="_blank">
+            <svg className='flex h-6 w-18 ' viewBox="0 0 64 30" xmlns="http://www.w3.org/2000/svg"> 
+              <path d="M8.73315363881402 0.001 L17.2641509433962 9.29919137466307 L24.5013477088949 26.4420485175202 L16.900269541779 29.5148247978437 L0.001 24.6630727762803 Z" fill="var(--text-color)"/>
+              <path d="M20.5390835579515 8.61185983827493 L45.0808625336927 0.363881401617251 L43.2614555256065 12.6549865229111 L34.0835579514825 29.1509433962264 L27.2911051212938 24.8652291105121 Z" fill="var(--text-color)"/>
+              <path d="M43.9083557951482 18.3962264150943 L58.2210242587601 6.06469002695418 L63.0727762803235 12.4528301886792 L63.7196765498652 29.99999 L37.9649595687332 29.2722371967655 Z" fill="var(--text-color)"/>
+            </svg>
+          </a>
+        </nav>
+    </header>
+    <div class="app-container">
+        <div class="state-overview">
+            <div class="status-section">
+                <div class="status-items">
+                    <div class="status-item">
+                    Search: <span id="search-status">Idle</span>
+                    </div>
+                    <div class="status-item">
+                    LLM: <span id="llm-status">Idle</span>
+                    </div>
+                    <div class="status-item">
+                    Current task: <span id="current-task">App not started</span>
+                    </div>
+                </div>
+                <div id="toggle-status-button" title="Show Params">☰</div>
+            </div>
+            
+            <div id="status-params" class="collapsed">
+                <input type="text" id="search-endpoint-input" placeholder="Search API Endpoint">
+                <input type="text" id="llm-endpoint-input" placeholder="LLM API Endpoint">
+                <div id="status-error" class="error-message"></div>
+                <button id="update-endpoints-button">Update Endpoints</button>
+            </div>
+        </div>
+        <div class="chat-container">
+            <div class="chat-area">
+                <div id="message-list" class="message-list">
+                    <!-- Chat messages will appear here -->
+                </div>
+                <div class="input-area">
+                    <textarea id="chat-input" placeholder="Enter your query..." rows="3"></textarea>
+                    <div class="chat-controls">
+                        <label class="reuse-chunks-label">
+                            <input type="checkbox" id="reuse-chunks-checkbox"> Reuse previous chunks
+                        </label>
+                        <div class="chat-buttons">
+                            <button id="send-button">Send</button>
+                            <button id="toggle-panel-button" title="Show Status & Chunks">Show sources</button>
+                        </div>  
+                    </div>
+                </div>
+            </div>
+            <div id="right-panel" class="right-panel collapsed">
+                <div class="panel-content">
+                    <button id="close-panel-button" class="close-panel-button" title="Close Panel">×</button>
+                    <h2>Sources</h2>
+                    <div id="chunks-section">
+                        <div id="chunk-list" class="chunk-list">
+                            <p class="empty-state">No chunks retrieved yet. Start a conversation to see content here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tooltip" class="tooltip" style="display: none;"></div>
+
+    <script src="dist/bundle.js"></script>
+</body>
+</html>

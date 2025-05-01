@@ -1,0 +1,22 @@
+{
+  "name": "brag",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --outfile=dist/bundle.js --sourcemap",
+    "dev": "esbuild src/main.ts --bundle --outfile=dist/bundle.js --sourcemap --servedir=. --serve=:5173"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "esbuild": "^0.25.3",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "dompurify": "^3.2.5",
+    "marked": "^15.0.11"
+  }
+}

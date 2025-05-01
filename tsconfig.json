@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "ES2016", // Target modern browsers
+      "module": "ESNext",  // Use modern ES modules
+      "moduleResolution": "node",
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "sourceMap": true, // Useful for debugging
+      "lib": ["DOM", "ES2016"] // Include DOM types for browser environment
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules"]
+  }
