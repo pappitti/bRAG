@@ -47,7 +47,7 @@
     color: var(--text-color);
   }
 
-  h1, h2{
+  h1 {
     font-family: var(--font-family-heading);
     font-weight: 700;
   }
@@ -414,7 +414,7 @@
     color: var(--error-color);
   }
   
-  /* Chunk List and Viewer */
+  /* Chunk List */
   .chunk-list {
     overflow-y: auto;
     display: flex;
@@ -649,7 +649,7 @@
     }
   }
   
-  /* Dark Mode Support (Optional) */
+  /* Dark Mode Support (TODO) */
   @media (prefers-color-scheme: dark) {
     :root {
       --primary-color: #4a6cf7;

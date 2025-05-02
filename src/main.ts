@@ -19,14 +19,13 @@ async function handleRagRequest() {
     appState.setCurrentTask(`Starting RAG process for query: ${query}`)
     appState.setLoading(true);
     appState.setBackendStatus('search', 'loading');
-    appState.setSelectedChunkIndex(null); // Close chunk viewer
 
-    let currentChunks = new Map<string, Chunk>(appState.getState().chunks); // Get current chunks from state
+    let currentChunks = new Map<string, Chunk>(appState.getState().chunks); 
 
-    const searchTime = new Date().toISOString(); // Capture the search time
+    const searchTime = new Date().toISOString(); 
 
     try {
-        // 1. Search for chunks
+        // Search for chunks
         const searched = await searchChunks(query);
         
         const searchKeys : string[] = [];
@@ -64,10 +63,10 @@ async function handleRagRequest() {
         appState.setBackendStatus('search', 'error', error.message || 'Unknown search error');
         appState.addChatMessage({ role: 'system', content: `<p class="error-message">Error fetching search results: ${error.message}</p>` });
         appState.setLoading(false);
-        return; // Stop the process if search fails
+        return; 
     }
 
-    // 2. Prepare chunks for LLM (handle reuse)
+    // Prepare chunks for LLM (handle reuse)
     let chunksForLLM = Array.from(currentChunks.entries())
         .filter(chunk => chunk[1].active) // Only include active chunks
 
@@ -79,17 +78,17 @@ async function handleRagRequest() {
         appState.setCurrentTask(`Reusing active chunks. Total active chunks: ${chunksForLLM.length}`);
     }
 
-    const chunkKeys : [number, string][]= chunksForLLM.map((chunk, index) => [index, chunk[0]]); // Extract keys for LLM index
-    const llmIndex = new Map(chunkKeys); // Map chunk index to key
+    const chunkKeys : [number, string][]= chunksForLLM.map((chunk, index) => [index, chunk[0]]);
+    const llmIndex = new Map(chunkKeys); 
     appState.setLLMIndex(llmIndex); // Update LLM index in state
 
 
-    // 3. Call LLM if chunks are available
+    // Call LLM if chunks are available
     if (chunksForLLM.length === 0) {
         appState.setCurrentTask("No chunks found or prepared for LLM.");
         appState.addChatMessage({ role: 'assistant', content: `<p>I couldn't find any relevant information to answer your query.</p>` });
         appState.setLoading(false);
-        appState.setBackendStatus('llm', 'idle'); // Reset LLM status
+        appState.setBackendStatus('llm', 'idle'); 
         return;
     }
 
@@ -109,7 +108,6 @@ async function handleRagRequest() {
                 appState.setCurrentTask(`LLM stream error: (${error})`);
                 appState.setBackendStatus('llm', 'error', error.message || 'Streaming error');
                 appState.addChatMessage({ role: 'system', content: `<p class="error-message">Error during response generation: ${error.message}</p>` });
-                 // Finalize potentially incomplete message gracefully? Or replace loading msg.
                 finalizeAssistantMessage(); // Attempt to finalize with what we have
                 appState.setLoading(false);
             },
@@ -117,7 +115,7 @@ async function handleRagRequest() {
                 // On stream complete:
                 appState.setCurrentTask("LLM stream completed successfully.");
                 appState.setBackendStatus('llm', 'ok');
-                finalizeAssistantMessage(); // Final processing and state update
+                finalizeAssistantMessage(); 
                 appState.setLoading(false);
             }
         );
@@ -126,11 +124,11 @@ async function handleRagRequest() {
          appState.setCurrentTask(`LLM invocation failed: (${error})`);
          appState.setBackendStatus('llm', 'error', error.message || 'Unknown LLM error');
          appState.addChatMessage({ role: 'system', content: `<p class="error-message">Failed to start response generation: ${error.message}</p>` });
-          // Replace loading message with error
+
          const history = appState.getState().chatHistory;
          if (history.length > 0 && history[history.length-1].role === 'assistant' && history[history.length-1].content.includes('loading-indicator')) {
              history.pop(); // Remove the loading message
-             appState.updateState({ chatHistory: history }); // Update state without the loading message
+             appState.updateState({ chatHistory: history }); 
          }
          appState.setLoading(false);
     }
@@ -162,9 +160,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     appState.setCurrentTask("RAG Chat App Initialized");
-
-    // Optional: Check initial backend status on load?
-    // You might want dedicated /status endpoints on your backends.
-    // checkBackendStatus(appState.getState().searchBackend.endpoint, 'search');
-    // checkBackendStatus(appState.getState().llmBackend.endpoint, 'llm');
 });

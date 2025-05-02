@@ -1,11 +1,9 @@
 // src/api.ts
-import { AppState } from './state'; // Use singleton state
+import { AppState } from './state'; 
 import { SearchResponse, Chunk, GenerationRequest, StreamResponse } from './types';
 import { SEARCH_TOP_N, DEFAULT_CHUNK_ENDPOINT, DEFAULT_LLM, DEFAULT_MAX_TOKENS, EOS_TOKEN } from './config';
 
-/**
- * Performs a search query against the BM25 backend.
- */
+/* Performs a search query against the BM25 backend */
 export async function searchChunks(query: string): Promise<SearchResponse> {
     const endpoint = AppState.getInstance().getState().searchBackend.endpoint;
     const url = new URL(endpoint);
@@ -32,18 +30,15 @@ export async function searchChunks(query: string): Promise<SearchResponse> {
     }
 }
 
-/**
- * Fetches a specific chunk by its ID and Titre.
- * Note: Requires the *exact* ID and Titre as stored in the backend index.
- */
+/* Fetches a specific chunk by its ID and Titre */
 export async function getChunkById(chunk_index: number, titre: string): Promise<Chunk | null> {
-     // Use search endpoint URL as base, but replace path with /chunk
+
      const searchEndpointUrl = new URL(AppState.getInstance().getState().searchBackend.endpoint);
      const chunkEndpointPath = DEFAULT_CHUNK_ENDPOINT.startsWith('/')
          ? DEFAULT_CHUNK_ENDPOINT
-         : new URL(DEFAULT_CHUNK_ENDPOINT).pathname; // Handle absolute/relative path better if needed
+         : new URL(DEFAULT_CHUNK_ENDPOINT).pathname; 
 
-     const url = new URL(chunkEndpointPath, searchEndpointUrl.origin); // Combine origin + path
+     const url = new URL(chunkEndpointPath, searchEndpointUrl.origin); 
      url.searchParams.append('id', chunk_index.toString());
      url.searchParams.append('titre', titre);
 
@@ -75,25 +70,21 @@ export async function getChunkById(chunk_index: number, titre: string): Promise<
 }
 
 
-/**
- * Generates the prompt string based on the template.
- */
+/* Generates the prompt string based on the template */
 function buildLLMPrompt(query: string, chunks: Chunk[]): string {
     let prompt = `<|query_start|>${query}<|query_end|>`;
     chunks.forEach((chunk, index) => {
         // Assign a 1-based index for the prompt, store it on the chunk for later mapping
         prompt += `\n<|source_start|><|source_id|>${index+1} ${chunk.contenu}<|source_end|>`;
     });
-    prompt += `\n<|language_start|>`; // Model expects this to start generation
+    prompt += `\n<|language_start|>`; // Pleias-1B expects this to start generation
     return prompt;
 }
 
-/**
- * Sends the query and chunks to the LLM backend and handles streaming response.
- */
+/* Sends the query and chunks to the LLM backend and handles streaming response. */
 export async function generateResponseStream(
     query: string,
-    onData: (chunk: StreamResponse) => void, // Callback for each token/chunk
+    onData: (chunk: StreamResponse) => void, 
     onError: (error: Error) => void,
     onComplete: () => void
 ): Promise<void> {
@@ -113,7 +104,7 @@ export async function generateResponseStream(
         eos_token: EOS_TOKEN,
     }
 
-    console.log("Sending prompt to LLM:", prompt); // Log the prompt being sent
+    console.log("Sending prompt to LLM:", prompt); 
 
     try {
         const response = await fetch(endpoint, {
@@ -134,7 +125,7 @@ export async function generateResponseStream(
         }
 
         // Process the stream
-        AppState.getInstance().setBackendStatus('llm', 'streaming'); // Update status
+        AppState.getInstance().setBackendStatus('llm', 'streaming'); 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -144,6 +135,7 @@ export async function generateResponseStream(
             const textChunk = decoder.decode(value, { stream: !done });
             buffer += textChunk;
 
+            // TODO : fix the issue of double content (final message is duplicated)
             if (done) {
                 console.log('LLM stream finished.');
                 // Process any remaining data in the buffer before completing
@@ -165,7 +157,7 @@ export async function generateResponseStream(
 function processBuffer(
     buffer: string,
     onData: (data: StreamResponse) => void,
-    onError: (error: Error) => void // Optional: Add error handling for parse failures
+    onError: (error: Error) => void // TODO: handle error
 ): string {
     // SSE messages are separated by double newlines
     const messageSeparator = '\n\n';
@@ -177,7 +169,7 @@ function processBuffer(
 
     for (const message of messages) {
         if (!message.trim()) {
-            continue; // Skip empty messages
+            continue; 
         }
 
         // Find the 'data: ' line
@@ -194,17 +186,14 @@ function processBuffer(
                              onData(parsedData as StreamResponse);
                         } else {
                              console.warn("Received data doesn't match StreamResponse format:", parsedData);
-                             // Optionally call onError or just ignore malformed data
+                             // TODO: handle error
                         }
 
                     } catch (e) {
                         console.error('Failed to parse JSON from SSE data:', jsonString, e);
-                        // Optionally call onError for parse failures
-                        // onError(new Error(`Failed to parse stream data: ${e.message}`));
                     }
                 }
                 // Break after finding the first 'data:' line in a multi-line message block if necessary,
-                // though typically one 'data:' line per message block is expected.
                 break;
              }
         }

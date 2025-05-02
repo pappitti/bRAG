@@ -40,7 +40,6 @@ export class AppState {
             llmIndex: new Map<number, string>(), // Map of chunk index to LLM Input to the LLM key in chunks
             reuseChunks: false,
             isLoading: false,
-            currentLLMResponse: '',
             selectedChunkIndex: null
          };
     }
@@ -108,22 +107,6 @@ export class AppState {
         this.updateState({ chatHistory: [...this.state.chatHistory, message] });
     }
 
-    public updateLastAssistantMessage(contentUpdate: string, isComplete: boolean = false) {
-        const lastMessageIndex = this.state.chatHistory.length - 1;
-        if (lastMessageIndex >= 0 && this.state.chatHistory[lastMessageIndex].role === 'assistant') {
-            const updatedHistory = [...this.state.chatHistory];
-            // Append new content if streaming, replace if complete (or handle complex updates)
-             // For simplicity, we just append here. A more robust solution might parse/replace.
-             if (!isComplete) {
-                updatedHistory[lastMessageIndex].content += contentUpdate; // Append raw stream chunk for now
-             } else {
-                 // If processing happens elsewhere before calling this, contentUpdate could be the final HTML
-                 updatedHistory[lastMessageIndex].content = contentUpdate;
-             }
-             this.updateState({ chatHistory: updatedHistory });
-        }
-    }
-
     public setBackendStatus(backend: 'search' | 'llm', status: BackendStatusType, error?: string) {
          const backendKey = `${backend}Backend` as const; // 'searchBackend' | 'llmBackend'
          this.updateState({
@@ -157,7 +140,7 @@ export class AppState {
         const chunk = this.state.chunks.get(key);
         if (chunk && chunk.previousChunkIndex) {
             try {
-                // Simulate an API call to get the chunk before the current one
+                // API call to get the chunk before the current one
                 const response = await getChunkById(chunk.previousChunkIndex, chunk.titre);
                 if (!response) {
                     throw new Error('Network response was not ok');
@@ -180,7 +163,7 @@ export class AppState {
         const chunk = this.state.chunks.get(key);
         if (chunk && chunk.nextChunkIndex) {
             try {
-                // Simulate an API call to get the chunk after the current one
+                // API call to get the chunk after the current one
                 const response = await getChunkById(chunk.nextChunkIndex, chunk.titre);
                 if (!response) {
                     throw new Error('Network response was not ok');
@@ -213,7 +196,7 @@ export class AppState {
 
     public setReuseChunks(reuse: boolean) {
          this.updateState({ reuseChunks: reuse });
-         this.saveState(); // Save preference
+         this.saveState(); 
      }
 
     public setCurrentQuery(query: string) {

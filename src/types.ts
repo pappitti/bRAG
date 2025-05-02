@@ -45,7 +45,6 @@ export interface AppState {
     llmIndex:Map<number, string>; // Map of chunk index to LLM Input to the LLM key in chunks
     reuseChunks: boolean;
     isLoading: boolean; // Overall loading state
-    currentLLMResponse: string; // Buffer for streaming response
     selectedChunkIndex: string | null; // chunk to show in viewer
     currentTask ? : string
 }
@@ -74,9 +73,9 @@ export interface GenerationRequest{
 }
 
 export interface ChatMessage {
-    role: 'user' | 'assistant' | 'system'; // System for errors/info
-    content: string; // Rendered HTML content
-    rawContent?: string; // Raw response before processing (optional)
+    role: 'user' | 'assistant' | 'system'; 
+    content: string; // Rendered HTML content after processing
+    rawContent?: string; // Raw response before processing 
 }
 
 export interface StreamResponse {

@@ -34,7 +34,7 @@ function renderChatMessages(messages: ChatMessage[]) {
 
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('content');
-        contentDiv.innerHTML = msg.content; // Assumes content is already processed HTML
+        contentDiv.innerHTML = msg.content; 
 
         // Add citation listeners if it's an assistant message
          if (msg.role === 'assistant') {
@@ -55,7 +55,7 @@ function renderChatMessages(messages: ChatMessage[]) {
 
 function renderStatus(state: AppStateType) {
     searchStatusSpan.textContent = state.searchBackend.status;
-    searchStatusSpan.className = `status-${state.searchBackend.status}`; // Optional: for styling
+    searchStatusSpan.className = `status-${state.searchBackend.status}`; 
     llmStatusSpan.textContent = state.llmBackend.status;
     llmStatusSpan.className = `status-${state.llmBackend.status}`;
 
@@ -122,8 +122,6 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
 
             const searchChunks = Array.from(chunks.entries())
                 .filter(([key]) => search.results.includes(key))
-            // Map active chunk prompt indices for highlighting or styling (optional)
-            // const activePromptIndices = new Set(activeChunks.map(c => c.promptIndex).filter(idx => idx !== undefined));
 
             searchChunks.forEach(([chunkKey, chunk]) => {
                 const chunkItem = document.createElement('div');
@@ -133,11 +131,6 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
                     chunkItem.classList.add('expanded');
                     elementToScrollTo = chunkItem;
                 }
-
-                // Highlight if chunk was used in the last generation (optional)
-                // if (chunk.promptIndex && activePromptIndices.has(chunk.promptIndex)) {
-                //     chunkItem.style.backgroundColor = '#e0f2fe'; // Example highlight
-                // }
 
                 const chunkHeader = document.createElement('div');
                 chunkHeader.classList.add('chunk-item-header');
@@ -169,7 +162,7 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
                 content.classList.add('chunk-item-content');
 
                 // Render markdown safely for the preview
-                content.innerHTML = renderMarkdown(chunk.contenu); // Use the utility
+                content.innerHTML = renderMarkdown(chunk.contenu); 
 
                 chunkItem.appendChild(chunkHeader);
 
@@ -223,7 +216,7 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
         if (elementToScrollTo) {
             // Use scrollIntoView for better reliability
             elementToScrollTo.scrollIntoView({
-                behavior: 'auto', // 'smooth' for animation, 'auto' for instant
+                behavior: 'smooth', // 'smooth' for animation, 'auto' for instant
                 block: 'nearest',   // 'start', 'center', 'end', or 'nearest'
             });
         }
@@ -232,20 +225,16 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
 
 // --- Event Handlers ---
 
-function handleSendQuery(appState: AppState) { // Pass AppState instance
+function handleSendQuery(appState: AppState) { 
     const query = chatInput.value.trim();
     if (!query || appState.getState().isLoading) return;
 
     appState.setCurrentQuery(query);
-    appState.addChatMessage({ role: 'user', content: `<p>${query}</p>` }); // Simple paragraph for user query
+    appState.addChatMessage({ role: 'user', content: `<p>${query}</p>` }); 
     chatInput.value = ''; // Clear input
     sendButton.disabled = true; // Disable until response or if input is empty again
 
     // Trigger the RAG process (defined in main.ts)
-    // This function only handles the UI part of sending.
-     // The actual API calls will be triggered from main.ts after state update.
-     // We need a way to signal main.ts to start the process.
-     // Using a custom event or directly calling a controller function is common.
      document.dispatchEvent(new CustomEvent('sendquery'));
 }
 
@@ -253,7 +242,7 @@ function handleUpdateEndpoints(appState: AppState) {
     const newSearchEndpoint = searchEndpointInput.value.trim();
     const newLlmEndpoint = llmEndpointInput.value.trim();
     appState.setEndpoints(newSearchEndpoint, newLlmEndpoint);
-    // Optional: Add a visual confirmation or status check here
+   
     console.log("Endpoints updated in state.");
     statusErrorDiv.textContent = "Endpoints updated."; // Simple feedback
     statusErrorDiv.style.display = 'block';
@@ -265,7 +254,6 @@ function handleCitationClick(event: Event) {
     const promptIndexStr = target.dataset.chunkKey;
     if (promptIndexStr) {
         const state = AppState.getInstance().getState();
-        // Find the chunk in *activeChunks* that matches this promptIndex
         const citedChunk = state.chunks.get(promptIndexStr);
         rightPanel.classList.toggle('collapsed', false);
 
@@ -281,7 +269,7 @@ function handleCitationMouseEnter(event: MouseEvent) {
     const promptIndexStr = target.dataset.chunkKey;
     if (promptIndexStr) {
         const state = AppState.getInstance().getState();
-        const citedChunk = state.chunks.get(promptIndexStr); // Assuming chunks is a Map
+        const citedChunk = state.chunks.get(promptIndexStr); 
         if (citedChunk) {
             // Show tooltip with chunk title and beginning of text
             const tooltipText = `Source ${promptIndexStr}: ${citedChunk.titre}\n\n${citedChunk.contenu.substring(0, 150)}${citedChunk.contenu.length > 150 ? '...' : ''}`;
@@ -307,7 +295,7 @@ export function initializeUI(appState: AppState) {
         console.log("UI received state update");
         renderChatMessages(newState.chatHistory);
         renderStatus(newState);
-        renderChunks(newState.searchHistory, newState.chunks); // Pass both lists
+        renderChunks(newState.searchHistory, newState.chunks);
 
         // Update checkbox if changed programmatically (less common)
          if (reuseChunksCheckbox.checked !== newState.reuseChunks) {
@@ -350,7 +338,7 @@ export function initializeUI(appState: AppState) {
 
 // --- Specific UI Update Helpers ---
 
- /** Appends streaming text to the last assistant message, processes markdown/citations */
+ /* Appends streaming text to the last assistant message, processes markdown/citations */
  export function appendStreamContent(rawChunk: StreamResponse) {
     const state = AppState.getInstance();
     const appState = state.getState();
@@ -389,7 +377,7 @@ export function initializeUI(appState: AppState) {
  }
  
 
- /** Finalizes the last assistant message once streaming is complete */
+ /* Finalizes the last assistant message once streaming is complete */
  export function finalizeAssistantMessage() {
      const state = AppState.getInstance();
      const currentHistory = state.getState().chatHistory;
@@ -429,7 +417,7 @@ export function initializeUI(appState: AppState) {
      }
  }
 
-/** Adds a temporary "Loading..." message for the assistant */
+/* Adds a temporary "Loading..." message for the assistant */
 export function addAssistantLoadingMessage() {
      const state = AppState.getInstance();
      state.addChatMessage({
