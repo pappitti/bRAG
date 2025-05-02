@@ -16,7 +16,7 @@ bRAG is a simple web-based chat application demonstrating the Retrieval-Augmente
 
 1.  Clone the repository:
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/pappitti/bRAG.git
     cd brag
     ```
 2.  Install dependencies:

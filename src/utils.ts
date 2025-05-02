@@ -19,9 +19,19 @@ export function renderMarkdown(markdown: string): string {
     }
 }
 
+// Helper function for basic HTML escaping for attribute values
+function escapeHtmlAttr(unsafe: string): string {
+    return unsafe
+         .replace(/&/g, "&") // Must be first
+         .replace(/</g, "<")
+         .replace(/>/g, ">")
+         .replace(/"/g, '"')
+         .replace(/'/g, "'");
+}
+
 // Basic Citation Parsing and Rendering
 // Regex to find <ref name="<|source_id|>N">...</ref> tags
-const citationRegex = /<ref name="<\|source_id\|>(\d+)">.*?<\/ref>/g;
+const citationRegex = /<ref name="(?:<\|source_id\|>)?(\d+)">(.*?)<\/ref>/gs;
 const simpleCitationRegex = /<\|source_id\|>(\d+)/g;
 
 function processRawTextToHtmlStructure(rawText: string): string {
@@ -55,17 +65,26 @@ function processRawTextToHtmlStructure(rawText: string): string {
     // Process Citations (Insert <span> tags)
     if (chunks && llmIndex) {
         // Process Complex Citations (<ref>...)
-        processedText = processedText.replace(citationRegex, (match, sourceIndexStr) => {
+        processedText = processedText.replace(citationRegex, (
+            match: string,          // Full match: <ref name="[<|source_id|>]N">Content</ref>
+            sourceIndexStr: string, // Capture group 1: N (the number)
+            refContent: string,     // Capture group 2: Content (inside the ref tag)
+            offset: number,         // Index of match start
+            fullString: string      // The whole text being processed
+        ) => {
+            
             const sourceIndex = parseInt(sourceIndexStr, 10);
             if (isNaN(sourceIndex) || sourceIndex <= 0) return `[Invalid Ref Index: ${sourceIndexStr}]`;
 
             const chunkKey = llmIndex.get(sourceIndex - 1);
             const chunk = chunkKey ? chunks.get(chunkKey) : null;
 
+           const safeRefContent = escapeHtmlAttr(refContent.trim());
+
             if (chunk) {
-                const safeTitle = chunk.titre.replace(/"/g, '"').replace(/</g, '<').replace(/>/g, '>');
+                const safeTitle = escapeHtmlAttr(chunk.titre);
                 // Use data-chunk-key for lookup in handlers
-                return `<span class="citation" data-chunk-key="${chunkKey}" title="Source ${sourceIndex}: ${safeTitle} (Chunk ${chunk.chunkIndex})">[${sourceIndex}]</span>`;
+                return `<span class="citation" data-chunk-key="${chunkKey}" title="Source ${sourceIndex}: ${safeTitle} (Chunk ${chunk.chunkIndex})">${safeRefContent}[${sourceIndex}]</span>`;
             } else {
                 console.warn(`Citation <ref> found for unknown source index: ${sourceIndex}`);
                 return `[Source ${sourceIndex} not found]`;
@@ -81,7 +100,7 @@ function processRawTextToHtmlStructure(rawText: string): string {
             const chunk = chunkKey ? chunks.get(chunkKey) : null;
 
             if (chunk) {
-                const safeTitle = chunk.titre.replace(/"/g, '"').replace(/</g, '<').replace(/>/g, '>');
+                const safeTitle = escapeHtmlAttr(chunk.titre);
                 return `<span class="citation" data-chunk-key="${chunkKey}" title="Source ${sourceIndex}: ${safeTitle} (Chunk ${chunk.chunkIndex})">[${sourceIndex}]</span>`;
             } else {
                 console.warn(`Simple citation <|source_id|> found for unknown source index: ${sourceIndex}`);

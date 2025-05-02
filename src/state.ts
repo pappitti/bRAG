@@ -45,31 +45,32 @@ export class AppState {
     }
 
     private loadState(): AppStateType {
-        const savedState = localStorage.getItem('ragChatAppState');
+        // Temporarily disabled localStorage loading for testing
+        // const savedState = localStorage.getItem('ragChatAppState');
         const defaultState = this.getDefaultState();
-        if (savedState) {
-            console.log("Loading saved state:", savedState);
-            try {
-                const parsed = JSON.parse(savedState);
-                // Merge saved endpoints with defaults, keep other defaults fresh
-                return {
-                   ...defaultState,
-                   chatHistory : parsed.chatHistory ?? defaultState.chatHistory,
-                   searchBackend: {
-                       ...defaultState.searchBackend,
-                       endpoint: parsed.searchEndpoint || defaultState.searchBackend.endpoint,
-                   },
-                   llmBackend: {
-                        ...defaultState.llmBackend,
-                        endpoint: parsed.llmEndpoint || defaultState.llmBackend.endpoint,
-                   },
-                   reuseChunks: parsed.reuseChunks ?? defaultState.reuseChunks,
-                };
-            } catch (e) {
-                console.error("Failed to parse saved state, using defaults.", e);
-                return defaultState;
-            }
-        }
+        // if (savedState) {
+        //     console.log("Loading saved state:", savedState);
+        //     try {
+        //         const parsed = JSON.parse(savedState);
+        //         // Merge saved endpoints with defaults, keep other defaults fresh
+        //         return {
+        //            ...defaultState,
+        //            chatHistory : parsed.chatHistory ?? defaultState.chatHistory,
+        //            searchBackend: {
+        //                ...defaultState.searchBackend,
+        //                endpoint: parsed.searchEndpoint || defaultState.searchBackend.endpoint,
+        //            },
+        //            llmBackend: {
+        //                 ...defaultState.llmBackend,
+        //                 endpoint: parsed.llmEndpoint || defaultState.llmBackend.endpoint,
+        //            },
+        //            reuseChunks: parsed.reuseChunks ?? defaultState.reuseChunks,
+        //         };
+        //     } catch (e) {
+        //         console.error("Failed to parse saved state, using defaults.", e);
+        //         return defaultState;
+        //     }
+        // }
         return defaultState;
     }
 
