@@ -1,7 +1,7 @@
 // src/api.ts
 import { AppState } from './state'; // Use singleton state
 import { SearchResponse, Chunk, GenerationRequest, StreamResponse } from './types';
-import { SEARCH_TOP_N, DEFAULT_CHUNK_ENDPOINT, DEFAULT_LLM, DEFAULT_MAX_TOKENS } from './config';
+import { SEARCH_TOP_N, DEFAULT_CHUNK_ENDPOINT, DEFAULT_LLM, DEFAULT_MAX_TOKENS, EOS_TOKEN } from './config';
 
 /**
  * Performs a search query against the BM25 backend.
@@ -109,7 +109,8 @@ export async function generateResponseStream(
         model : DEFAULT_LLM,
         max_tokens: DEFAULT_MAX_TOKENS,
         stream: true,
-        temp: 0.7
+        temp: 0.7,
+        eos_token: EOS_TOKEN,
     }
 
     console.log("Sending prompt to LLM:", prompt); // Log the prompt being sent
@@ -133,12 +134,16 @@ export async function generateResponseStream(
         }
 
         // Process the stream
+        AppState.getInstance().setBackendStatus('llm', 'streaming'); // Update status
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
         while (true) {
             const { done, value } = await reader.read();
+            const textChunk = decoder.decode(value, { stream: !done });
+            buffer += textChunk;
+
             if (done) {
                 console.log('LLM stream finished.');
                 // Process any remaining data in the buffer before completing
@@ -146,11 +151,7 @@ export async function generateResponseStream(
                 onComplete();
                 break;
             }
-            // Decode the chunk and add it to the buffer
-            const textChunk = decoder.decode(value, { stream: true });
-            buffer += textChunk;
-            // console.log("Raw chunk received:", textChunk); // Raw debug
-
+            
             // Process the buffer to extract complete SSE messages
             buffer = processBuffer(buffer, onData, onError);
         }

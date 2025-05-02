@@ -168,6 +168,7 @@ export class AppState {
                     contenu: `${response.contenu}  ${chunk.contenu}`, 
                 };
                 this.updateChunk(key, newChunk);
+                this.setSelectedChunkIndex(key); // Show the new chunk in the viewer
             }
             catch (error) {
                 this.setCurrentTask(`Error fetching previous chunk: ${error}`);
@@ -190,6 +191,7 @@ export class AppState {
                     contenu: `${chunk.contenu}  ${response.contenu}`, 
                 };
                 this.updateChunk(key, newChunk);
+                this.setSelectedChunkIndex(key); // Show the new chunk in the viewer
             }
             catch (error) {
                 this.setCurrentTask(`Error fetching next chunk: ${error}`);

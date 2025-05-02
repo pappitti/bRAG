@@ -102,7 +102,6 @@ async function handleRagRequest() {
             query,
             (streamChunk) => {
                 // On receiving data: Append to UI and update state buffer
-                appState.setBackendStatus('llm', 'streaming'); // Update status
                 appendStreamContent(streamChunk); // Pass active chunks for citation mapping
             },
             (error) => {

@@ -43,10 +43,13 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-family-heading);
-    font-weight: 700;
     margin-bottom: 0.5rem;
     color: var(--text-color);
+  }
+
+  h1, h2{
+    font-family: var(--font-family-heading);
+    font-weight: 700;
   }
   
   button, input, textarea {

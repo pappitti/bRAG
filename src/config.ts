@@ -3,8 +3,9 @@ export const DEFAULT_SEARCH_ENDPOINT = "http://localhost:8000/search"; // Replac
 export const DEFAULT_CHUNK_ENDPOINT = "http://localhost:8000/chunk"; // Replace with your default
 export const DEFAULT_LLM_ENDPOINT = "http://localhost:8001/generate"; // Replace with your default or proxy path
 export const SEARCH_TOP_N = 5; // Default number of chunks to retrieve
-export const DEFAULT_LLM = "mlx-community/Pleias-RAG-1B-bf16";
+export const DEFAULT_LLM = "PleIAs/Pleias-RAG-1B";
 export const DEFAULT_MAX_TOKENS= 2000; 
+export const EOS_TOKEN = "<|end_of_text|>"; // End of text token for LLMs
 
 
 // Citation configuration

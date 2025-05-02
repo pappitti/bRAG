@@ -1,7 +1,7 @@
 // src/ui.ts
 import { AppState } from './state';
 import { AppState as AppStateType, ChatMessage, Chunk, SearchResult, StreamResponse} from './types';
-import { renderMarkdown, processCitations, showTooltip, hideTooltip } from './utils';
+import { renderMarkdown, processResponse, showTooltip, hideTooltip } from './utils';
 
 // --- DOM Element References ---
 const messageList = document.getElementById('message-list')!;
@@ -84,12 +84,15 @@ function renderStatus(state: AppStateType) {
 }
 
 function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) {
+    const appState = AppState.getInstance();
     chunkListDiv.innerHTML = ''; // Clear previous chunks
 
     if (searchHistory.length === 0){
         chunkListDiv.innerHTML = '<p>Empty search history.</p>';
         return
     }
+
+    let elementToScrollTo: HTMLElement | null = null; 
 
     searchHistory.forEach((search, idx) =>{
         const searchItem = document.createElement('div')
@@ -122,10 +125,14 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
             // Map active chunk prompt indices for highlighting or styling (optional)
             // const activePromptIndices = new Set(activeChunks.map(c => c.promptIndex).filter(idx => idx !== undefined));
 
-            searchChunks.forEach(([chunkKey, chunk], index) => {
+            searchChunks.forEach(([chunkKey, chunk]) => {
                 const chunkItem = document.createElement('div');
                 chunkItem.classList.add('chunk-item');
                 chunkItem.dataset.chunkKey = chunkKey; // Store index for click handling
+                if (chunkKey === appState.getState().selectedChunkIndex) {
+                    chunkItem.classList.add('expanded');
+                    elementToScrollTo = chunkItem;
+                }
 
                 // Highlight if chunk was used in the last generation (optional)
                 // if (chunk.promptIndex && activePromptIndices.has(chunk.promptIndex)) {
@@ -146,7 +153,7 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
                 chunkActiveCheckbox.type = 'checkbox';
                 chunkActiveCheckbox.checked = chunk.active || false; // Default to false if undefined
                 chunkActiveCheckbox.addEventListener('change', () => {
-                    AppState.getInstance().updateChunk(
+                    appState.updateChunk(
                         chunkKey, 
                         {
                             ...chunk,
@@ -160,16 +167,11 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
 
                 const content = document.createElement('div');
                 content.classList.add('chunk-item-content');
+
                 // Render markdown safely for the preview
                 content.innerHTML = renderMarkdown(chunk.contenu); // Use the utility
 
                 chunkItem.appendChild(chunkHeader);
-               
-                content.addEventListener('click', () => {
-                    // Toggle expansion
-                    chunkItem.classList.toggle('expanded');
-                    AppState.getInstance().setSelectedChunkIndex(chunkKey);
-                });
 
                 if (chunk.previousChunkIndex && chunk.chunkIndex !== chunk.previousChunkIndex) {
                     const chunkViewerPrevButton = document.createElement('button');
@@ -177,14 +179,16 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
                     chunkViewerPrevButton.textContent = 'View previous';
 
                     chunkViewerPrevButton.addEventListener('click', async () => {
-                        await AppState.getInstance().addBeforeChunk(chunkKey);
-                        AppState.getInstance().setSelectedChunkIndex(chunkKey)
+                        await appState.addBeforeChunk(chunkKey);
                     });
 
                     chunkItem.appendChild(chunkViewerPrevButton);
                 }
 
                 chunkItem.appendChild(content);
+                content.addEventListener('click', () => {
+                    appState.setSelectedChunkIndex(chunkKey)
+                });
 
                 if (chunk.nextChunkIndex && chunk.nextChunkIndex <=(chunk.totalChunks -1)) {
                     const chunkViewerNextButton = document.createElement('button');
@@ -192,13 +196,11 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
                     chunkViewerNextButton.textContent = 'View Next';
 
                     chunkViewerNextButton.addEventListener('click', async () => {
-                        await AppState.getInstance().addAfterChunk(chunkKey);
-                        AppState.getInstance().setSelectedChunkIndex(chunkKey)
+                        await appState.addAfterChunk(chunkKey);
                     });
                     chunkItem.appendChild(chunkViewerNextButton);
                 }
     
-
                 searchChunkList.appendChild(chunkItem);
             
             });
@@ -217,6 +219,14 @@ function renderChunks(searchHistory: SearchResult[], chunks: Map<string,Chunk>) 
 
         searchItem.appendChild(searchChunkList);
         chunkListDiv.appendChild(searchItem);
+
+        if (elementToScrollTo) {
+            // Use scrollIntoView for better reliability
+            elementToScrollTo.scrollIntoView({
+                behavior: 'auto', // 'smooth' for animation, 'auto' for instant
+                block: 'nearest',   // 'start', 'center', 'end', or 'nearest'
+            });
+        }
     });
 }
 
@@ -252,11 +262,12 @@ function handleUpdateEndpoints(appState: AppState) {
 
 function handleCitationClick(event: Event) {
     const target = event.currentTarget as HTMLElement;
-    const promptIndexStr = target.dataset.sourcePromptIndex;
+    const promptIndexStr = target.dataset.chunkKey;
     if (promptIndexStr) {
         const state = AppState.getInstance().getState();
         // Find the chunk in *activeChunks* that matches this promptIndex
-        const citedChunk = state.chunks.get(promptIndexStr);;
+        const citedChunk = state.chunks.get(promptIndexStr);
+        rightPanel.classList.toggle('collapsed', false);
 
         citedChunk && AppState.getInstance().setSelectedChunkIndex(promptIndexStr);
             
@@ -267,7 +278,7 @@ function handleCitationClick(event: Event) {
 
 function handleCitationMouseEnter(event: MouseEvent) {
     const target = event.currentTarget as HTMLElement;
-    const promptIndexStr = target.dataset.sourcePromptIndex;
+    const promptIndexStr = target.dataset.chunkKey;
     if (promptIndexStr) {
         const state = AppState.getInstance().getState();
         const citedChunk = state.chunks.get(promptIndexStr); // Assuming chunks is a Map
@@ -297,16 +308,6 @@ export function initializeUI(appState: AppState) {
         renderChatMessages(newState.chatHistory);
         renderStatus(newState);
         renderChunks(newState.searchHistory, newState.chunks); // Pass both lists
-        // scroll selected chunk into view
-        const selectedChunkKey = newState.selectedChunkIndex;
-        // if (selectedChunkKey) {
-        //     const selectedChunkElement = chunkListDiv.querySelector(`[data-chunk-key="${selectedChunkKey}"]`);
-        //     if (selectedChunkElement) {
-        //         selectedChunkElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        //     }
-        // } else {
-        //     chunkViewerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        // }
 
         // Update checkbox if changed programmatically (less common)
          if (reuseChunksCheckbox.checked !== newState.reuseChunks) {
@@ -356,36 +357,37 @@ export function initializeUI(appState: AppState) {
     const currentHistory = appState.chatHistory;
     const lastMessageIndex = currentHistory.length - 1;
 
-    if (lastMessageIndex >= 0 && currentHistory[lastMessageIndex].role === 'assistant') {
-        // Append raw text to a buffer (might be better to store buffer in state)
-        let buffer = (currentHistory[lastMessageIndex].rawContent || '') + rawChunk.chunk; // Use a raw buffer
-         currentHistory[lastMessageIndex].rawContent = buffer; // Store buffer back if needed
+    if (lastMessageIndex < 0 || currentHistory[lastMessageIndex].role !== 'assistant') {
+        // Should not happen if an assistant message container was prepared
+        console.error("appendStreamContent called without a preceding assistant message.");
+        return;
+    }
 
-         // Process buffered content for citations and markdown
-         const { html: processedHtml } = processCitations(buffer);
+    const updatedRawContent = (currentHistory[lastMessageIndex].rawContent || '') + rawChunk.chunk;
+    currentHistory[lastMessageIndex].rawContent = updatedRawContent;
 
-        // Update the specific message element directly for better performance than re-rendering all
-        const messageElements = messageList.querySelectorAll('.message.assistant');
-        const lastMessageElement = messageElements[messageElements.length - 1];
-         if (lastMessageElement) {
-             const contentDiv = lastMessageElement.querySelector('.content');
-             if (contentDiv) {
-                 contentDiv.innerHTML = processedHtml;
-                 // Re-attach listeners for any *new* citations in this chunk
-                 contentDiv.querySelectorAll<HTMLElement>('.citation:not([data-listener-attached])').forEach(span => {
-                     span.addEventListener('click', handleCitationClick);
-                     span.addEventListener('mouseenter', handleCitationMouseEnter);
-                     span.addEventListener('mouseleave', hideTooltip);
-                     span.setAttribute('data-listener-attached', 'true'); // Mark as attached
-                 });
-                 // Scroll down
-                 messageList.scrollTop = messageList.scrollHeight;
-             }
-         }
-         // Also update the state, but maybe less frequently or only the raw content
-         // state.updateLastAssistantMessage(processedHtml, false); // Update state with processed HTML (can be slow if frequent)
-     }
+    // Update the specific message element directly for better performance than re-rendering all
+    const messageElements = messageList.querySelectorAll('.message.assistant');
+    const lastMessageElement = messageElements[messageElements.length - 1];
+    if (lastMessageElement) {
+        const contentDiv = lastMessageElement.querySelector('.content');
+        if (contentDiv) {
+            contentDiv.appendChild(document.createTextNode(rawChunk.chunk));
+            messageList.scrollTop = messageList.scrollHeight;
+        
+            const isScrolledToBottom = messageList.scrollHeight - messageList.clientHeight <= messageList.scrollTop + 1; // +1 for tolerance
+            if (isScrolledToBottom) {
+                    messageList.scrollTop = messageList.scrollHeight;
+            }
+        } else {
+            console.error("Could not find .content div in the last assistant message element.");
+        }
+        
+    } else {
+        console.error("Could not find the last assistant message element.");
+    }
  }
+ 
 
  /** Finalizes the last assistant message once streaming is complete */
  export function finalizeAssistantMessage() {
@@ -395,7 +397,10 @@ export function initializeUI(appState: AppState) {
 
      if (lastMessageIndex >= 0 && currentHistory[lastMessageIndex].role === 'assistant') {
          const finalRawContent = currentHistory[lastMessageIndex].rawContent || '';
-         const { html: finalHtml } = processCitations(finalRawContent);
+         state.setCurrentTask("Processing final response...");
+
+         const { html: finalHtml } = processResponse(finalRawContent);
+         state.setCurrentTask("Response processed.");
 
          // Update the UI definitively
          const messageElements = messageList.querySelectorAll('.message.assistant');
@@ -406,13 +411,13 @@ export function initializeUI(appState: AppState) {
                   contentDiv.innerHTML = finalHtml;
                    // Ensure all citation listeners are attached
                    contentDiv.querySelectorAll<HTMLElement>('.citation').forEach(span => {
-                       if (!span.hasAttribute('data-listener-attached')) {
                            span.addEventListener('click', handleCitationClick);
                            span.addEventListener('mouseenter', handleCitationMouseEnter);
                            span.addEventListener('mouseleave', hideTooltip);
                            span.setAttribute('data-listener-attached', 'true');
-                       }
                    });
+
+                   messageList.scrollTop = messageList.scrollHeight;
               }
           }
 
